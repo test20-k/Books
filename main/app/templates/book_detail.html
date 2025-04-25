@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}{{ book.title }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+
+    <div class="row g-5">
+        <div class="col-md-4">
+            <img src="{{ book.image or url_for('static', filename='images/default-cover.jpg') }}"
+                 alt="{{ book.title }}"
+                 class="img-fluid rounded shadow book-cover-large">
+        </div>
+
+        <div class="col-md-8">
+            <h1 class="display-5">{{ book.title }}</h1>
+            <p class="text-muted fs-5">by {{ book.authors_list|join(', ') }}</p>
+
+            <div class="mb-3">
+                <span class="badge bg-secondary">{{ book.publisher }}</span>
+                <span class="badge bg-light text-dark">{{ book.published_date }}</span>
+            </div>
+
+            <div class="d-flex align-items-center mb-4">
+                <small class="ms-3 text-muted">{{ book.ratings_count }} ratings</small>
+            </div>
+
+            {% if current_user.is_authenticated %}
+            <div class="card p-4 shadow-sm">
+                <h4>Rate this book</h4>
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3 star-rating">
+                        {% for i in range(5, 0, -1) %}
+                            <input type="radio" id="star{{ i }}" name="rating" value="{{ i }}"
+                                   {{ 'checked' if form.rating.data == i else '' }}>
+                            <label for="star{{ i }}"><i class="fas fa-star"></i></label>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.review(class="form-control", placeholder="Write your review...", rows=4) }}
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        {{ 'Update Review' if existing_rating else 'Submit Review' }}
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="mt-5">
+        <h3>Description</h3>
+        <p class="text-muted">{{ book.description or "No description available" }}</p>
+    </div>
+
+    <div class="mt-5">
+        <h3>Reader Reviews</h3>
+        {% for review in reviews.items %}
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">{{ review.user.profile_name }}</h5>
+                        <div class="text-warning">
+                            {% for i in range(5) %}
+                                <i class="fas fa-star{% if review.review_score <= i %}-o{% endif %}"></i>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% if review.review_text %}
+                        <p class="card-text mt-2">{{ review.review_text }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <p class="text-muted">No reviews yet. Be the first to review this book!</p>
+        {% endfor %}
+
+        <nav aria-label="Review Pagination" class="d-flex justify-content-center mt-4">
+            <ul class="pagination">
+                {% if reviews.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('main.book_detail', book_id=book.id, page=reviews.prev_num) }}">Previous</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                {% endif %}
+
+                <li class="page-item disabled">
+                    <span class="page-link">Page {{ reviews.page }} of {{ reviews.pages }}</span>
+                </li>
+
+                {% if reviews.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('main.book_detail', book_id=book.id, page=reviews.next_num) }}">Next</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Next</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+
+    <div class="mt-5">
+        <h3>Readers Also Enjoyed</h3>
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+            {% for similar_book in similar_books %}
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+                        <a href="{{ url_for('main.book_detail', book_id=similar_book.id) }}" class="text-decoration-none text-dark">
+                            <img src="{{ similar_book.image or url_for('static', filename='images/default-cover.jpg') }}"
+                                 alt="{{ similar_book.title }}"
+                                 class="card-img-top book-cover" style="object-fit: cover; height: 200px;">
+                            <div class="card-body d-flex flex-column">
+                                <h6 class="card-title">{{ similar_book.title }}</h6>
+                                <p class="card-text text-muted small">{{ similar_book.authors_list|join(', ') }}</p>
+                                <div class="mt-auto">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div class="text-warning">
+                                            {% set avg_rating_similar = 0 %}
+                                            {% if similar_book.ratings %}
+                                                {% set total_rating_similar = similar_book.ratings|sum(attribute='review_score') %}
+                                                {% set avg_rating_similar = total_rating_similar / similar_book.ratings|length %}
+                                            {% endif %}
+                                            {% for i in range(5) %}
+                                                <i class="fas fa-star{% if avg_rating_similar|round(1) <= i %}-o{% endif %}"></i>
+                                            {% endfor %}
+                                            <span class="ms-2 small">{{ avg_rating_similar|round(1) }}</span>
+                                        </div>
+                                        <small class="text-muted">({{ similar_book.ratings|length }})</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            {% else %}
+                <p class="text-muted">No similar books found.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

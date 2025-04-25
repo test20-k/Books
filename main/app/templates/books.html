@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Browse Books{% endblock %}
+
+{% block content %}
+<section class="mt-5">
+    <h2 class="mb-4">Browse Books{% if search_query %}: "<span class="text-primary">{{ search_query }}</span>"{% endif %}</h2>
+
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+        {% for book in books.items %}
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <a href="{{ url_for('main.book_detail', book_id=book.id) }}" class="text-decoration-none text-dark">
+                        <img src="{{ book.image or url_for('static', filename='images/default-cover.jpg') }}"
+                             alt="{{ book.title }}"
+                             class="card-img-top book-cover" style="object-fit: cover; height: 250px;">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">{{ book.title }}</h5>
+                            <p class="card-text text-muted small">{{ book.authors_list|join(', ') }}</p>
+                            <div class="mt-auto">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="text-warning">
+                                        {% set avg_rating = 0 %}
+                                        {% if book.ratings %}
+                                            {% set total_rating = book.ratings|sum(attribute='review_score') %}
+                                            {% set avg_rating = total_rating / book.ratings|length %}
+                                        {% endif %}
+                                        {% for i in range(5) %}
+                                            <i class="fas fa-star{% if avg_rating <= i %}-o{% endif %}"></i>
+                                        {% endfor %}
+                                    </div>
+                                    <small class="text-muted">({{ book.ratings|length }})</small>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <nav aria-label="Page navigation" class="mt-5 d-flex justify-content-center">
+        <ul class="pagination">
+            {% if books.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('main.list_books', page=books.prev_num, q=search_query) }}">Previous</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">Previous</span>
+                </li>
+            {% endif %}
+
+            <li class="page-item disabled">
+                <span class="page-link">Page {{ books.page }} of {{ books.pages }}</span>
+            </li>
+
+            {% if books.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('main.list_books', page=books.next_num, q=search_query) }}">Next</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">Next</span>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+</section>
+{% endblock %}
